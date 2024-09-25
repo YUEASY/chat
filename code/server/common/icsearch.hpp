@@ -5,6 +5,8 @@
 #include <iostream>
 #include <memory>
 #include "logger.hpp"
+namespace chat_ns
+{
 class JsonSerializer
 {
 public:
@@ -229,3 +231,4 @@ private:
     Json::Value _should;
     std::shared_ptr<elasticlient::Client> _client;
 };
+}

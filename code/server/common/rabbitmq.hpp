@@ -7,7 +7,8 @@
 #include <openssl/ssl.h>
 #include <openssl/opensslv.h>
 #include "logger.hpp"
-
+namespace chat_ns
+{
 #define ROUTING_KEY "default_routing_key"
 class MQClient
 {
@@ -87,3 +88,4 @@ private:
     std::unique_ptr<AMQP::TcpChannel> _channel;
     std::thread _loop_thread;
 };
+}

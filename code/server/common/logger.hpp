@@ -5,7 +5,7 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/async.h>
 
-namespace logging
+namespace chat_ns
 {
     class logger
     {
@@ -31,9 +31,9 @@ namespace logging
     std::shared_ptr<spdlog::logger> logger::g_default_logger;
 } // namespace log
 
-#define LOG_TRACE(format, ...) logging::logger::g_default_logger->trace(std::string("[{}:{}] ") + format, __FILE__, __LINE__, ##__VA_ARGS__)
-#define LOG_DEBUG(format, ...) logging::logger::g_default_logger->debug(std::string("[{}:{}] ") + format, __FILE__, __LINE__, ##__VA_ARGS__)
-#define LOG_INFO(format, ...) logging::logger::g_default_logger->info(std::string("[{}:{}] ") + format, __FILE__, __LINE__, ##__VA_ARGS__)
-#define LOG_WARN(format, ...) logging::logger::g_default_logger->warn(std::string("[{}:{}] ") + format, __FILE__, __LINE__, ##__VA_ARGS__)
-#define LOG_ERROR(format, ...) logging::logger::g_default_logger->error(std::string("[{}:{}] ") + format, __FILE__, __LINE__, ##__VA_ARGS__)
-#define LOG_CRIT(format, ...) logging::logger::g_default_logger->critical(std::string("[{}:{}] ") + format, __FILE__, __LINE__, ##__VA_ARGS__)
+#define LOG_TRACE(format, ...) chat_ns::logger::g_default_logger->trace(std::string("[{}:{}] ") + format, __FILE__, __LINE__, ##__VA_ARGS__)
+#define LOG_DEBUG(format, ...) chat_ns::logger::g_default_logger->debug(std::string("[{}:{}] ") + format, __FILE__, __LINE__, ##__VA_ARGS__)
+#define LOG_INFO(format, ...) chat_ns::logger::g_default_logger->info(std::string("[{}:{}] ") + format, __FILE__, __LINE__, ##__VA_ARGS__)
+#define LOG_WARN(format, ...) chat_ns::logger::g_default_logger->warn(std::string("[{}:{}] ") + format, __FILE__, __LINE__, ##__VA_ARGS__)
+#define LOG_ERROR(format, ...) chat_ns::logger::g_default_logger->error(std::string("[{}:{}] ") + format, __FILE__, __LINE__, ##__VA_ARGS__)
+#define LOG_CRIT(format, ...) chat_ns::logger::g_default_logger->critical(std::string("[{}:{}] ") + format, __FILE__, __LINE__, ##__VA_ARGS__)

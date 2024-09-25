@@ -7,9 +7,12 @@
 #include <etcd/Watcher.hpp>
 #include "logger.hpp"
 
+namespace chat_ns
+{
 class Registry
 {
 public:
+    using ptr = std::shared_ptr<Registry>;
     Registry(const std::string &host)
         : _client(std::make_shared<etcd::Client>(host)),
           _keep_alive(_client->leasekeepalive(3).get()),
@@ -97,3 +100,4 @@ private:
     std::shared_ptr<etcd::Client> _client;
     std::shared_ptr<etcd::Watcher> _watcher;
 };
+}
