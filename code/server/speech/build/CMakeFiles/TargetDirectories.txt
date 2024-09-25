@@ -1,3 +1,0 @@
-/home/yue/chat/code/server/speech/build/CMakeFiles/speech_server.dir
-/home/yue/chat/code/server/speech/build/CMakeFiles/edit_cache.dir
-/home/yue/chat/code/server/speech/build/CMakeFiles/rebuild_cache.dir
