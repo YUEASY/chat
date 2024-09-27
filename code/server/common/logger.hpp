@@ -10,7 +10,7 @@ namespace chat_ns
     class logger
     {
     public:
-        static void init_logger(bool mode, const std::string &file, int32_t level)
+        static void initLogger(bool mode, const std::string &file, int32_t level)
         {
             if (mode == false)
             {

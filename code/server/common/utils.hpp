@@ -6,6 +6,7 @@
 #include <chrono>
 #include <iomanip>
 #include "logger.hpp"
+#include <mysql/mysql.h>
 namespace chat_ns
 {
     class Utils
@@ -39,7 +40,6 @@ namespace chat_ns
 
             return randomPart + timePart.str();
         }
-  
         static bool readFile(std::string_view filename, std::string &body)
         {
             std::ifstream file(filename.data(),std::ios::binary | std::ios::in);
@@ -82,6 +82,43 @@ namespace chat_ns
             }
             file.close();
             return true;  
+        }
+
+        static MYSQL *mysqlInit(const char *db, const char *host = "127.0.0.1", const char *port = "3306", const char *user = "root", const char *passwd = "123456", const char *unix_socket = nullptr, unsigned long client_flag = 0)
+        {
+            MYSQL *mysql = mysql_init(NULL);
+            if (mysql == nullptr)
+            {
+                LOG_TRACE("init mysql instance failed!");
+                return nullptr;
+            }
+            if (mysql_real_connect(mysql, host, user, passwd, db, std::stoi(port), unix_socket, client_flag) == nullptr)
+            {
+                LOG_TRACE("connect mysql sever failed!");
+                mysql_close(mysql);
+                return nullptr;
+            }
+            mysql_set_character_set(mysql, "utf8");
+            return mysql;
+        }
+
+        static void mysqlDestroy(MYSQL *mysql)
+        {
+            if (mysql != nullptr)
+            {
+                mysql_close(mysql);
+            }
+        }
+
+        static bool mysqlQuery(MYSQL *mysql, const std::string &sql)
+        {
+            if (mysql_query(mysql, sql.c_str()) != 0)
+            {
+                LOG_ERROR("mysql query error:" + sql);
+                LOG_ERROR(mysql_error(mysql));
+                return false;
+            }
+            return true;
         }
     };
 

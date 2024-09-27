@@ -172,7 +172,7 @@ public:
     ESSearch(std::shared_ptr<elasticlient::Client> &client, const std::string &name, const std::string &type = "_doc")
         : _name(name), _type(type), _client(client) {}
 
-    ESSearch &append_must_not_term(const std::string &key, const std::vector<std::string> &vals)
+    ESSearch &appendMustNotTerm(const std::string &key, const std::vector<std::string> &vals)
     {
         Json::Value fields;
         for (const auto &val : vals)
@@ -184,7 +184,7 @@ public:
         _must_not.append(terms);
         return *this;
     }
-    ESSearch &append_should_match(const std::string &key, const std::string &val)
+    ESSearch &appendShouldMatch(const std::string &key, const std::string &val)
     {
         Json::Value field;
         field[key] = val;

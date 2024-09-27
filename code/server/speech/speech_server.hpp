@@ -60,7 +60,7 @@ namespace chat_ns
     {
     public:
         // 用于构造服务注册客户端对象
-        void make_reg_object(const std::string &reg_host,
+        void makeRegObject(const std::string &reg_host,
                              const std::string &service_name,
                              const std::string &access_host)
         {
@@ -68,7 +68,7 @@ namespace chat_ns
             _reg_client->registry(service_name, access_host);
         }
         // 构造RPC服务器对象
-        void make_rpc_server(uint16_t port, int32_t timeout, uint8_t num_threads)
+        void makeRpcServer(uint16_t port, int32_t timeout, uint8_t num_threads)
         {
             _rpc_server = std::make_shared<brpc::Server>();
             SpeechServiceImpl *speech_service = new SpeechServiceImpl();

@@ -16,11 +16,11 @@ DEFINE_int32(rpc_threads, 1, "Rpc的IO线程数量");
 int main(int argc, char *argv[])
 {
     google::ParseCommandLineFlags(&argc, &argv, true);
-    chat_ns::logger::init_logger(FLAGS_run_mode, FLAGS_log_file, FLAGS_log_level);
+    chat_ns::logger::initLogger(FLAGS_run_mode, FLAGS_log_file, FLAGS_log_level);
 
     chat_ns::SpeechServerBuilder ssb;
-    ssb.make_rpc_server(FLAGS_listen_port, FLAGS_rpc_timeout, FLAGS_rpc_threads);
-    ssb.make_reg_object(FLAGS_registry_host, FLAGS_base_service + FLAGS_instance_name, FLAGS_access_host);
+    ssb.makeRpcServer(FLAGS_listen_port, FLAGS_rpc_timeout, FLAGS_rpc_threads);
+    ssb.makeRegObject(FLAGS_registry_host, FLAGS_base_service + FLAGS_instance_name, FLAGS_access_host);
     auto server = ssb.build();
     server->start();
     return 0;
