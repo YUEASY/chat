@@ -3,7 +3,7 @@
 #include "../common/asr.hpp"
 #include "../common/etcd.hpp"
 #include "../common/logger.hpp"
-#include "speech.pb.h"
+#include "../proto/cpp_out/speech.pb.h"
 namespace chat_ns
 {
     class SpeechServiceImpl : public chat_ns::SpeechService

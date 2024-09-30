@@ -1,3 +1,4 @@
+#pragma once
 #include "icsearch.hpp"
 #include "models.hpp"
 
@@ -73,11 +74,11 @@ namespace chat_ns
             for (int i = 0; i < sz; i++)
             {
                 User user;
-                user.userId = json_user[i]["_source"]["user_id"].asString();
+                user.user_id = json_user[i]["_source"]["user_id"].asString();
                 user.nickname = json_user[i]["_source"]["nickname"].asString();
                 user.description = json_user[i]["_source"]["description"].asString();
                 user.phone = json_user[i]["_source"]["phone"].asString();
-                user.avatarId = json_user[i]["_source"]["avatar_id"].asString();
+                user.avatar_id = json_user[i]["_source"]["avatar_id"].asString();
                 res.push_back(user);
             }
             return res;

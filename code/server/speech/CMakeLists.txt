@@ -10,9 +10,9 @@ add_compile_options(-Wall)
 # 添加多个源文件
 set(SOURCES
     speech_server.cc
-    speech.pb.cc
+    ../proto/cpp_out/speech.pb.cc
 )
 
 add_executable(speech_server ${SOURCES})
 # 添加标准路径中的第三方库
-target_link_libraries(speech_server -lgflags -ljsoncpp -lbrpc -lspdlog -lfmt -lprotobuf -lleveldb -letcd-cpp-api -lcpprest -lcurl -lssl -lcrypto)
+target_link_libraries(speech_server -lgflags -ljsoncpp -pthread -lgtest -lgflags -lspdlog -lfmt -lbrpc -lssl -lcrypto -lprotobuf -lleveldb -letcd-cpp-api -lcpprest -lcurl)

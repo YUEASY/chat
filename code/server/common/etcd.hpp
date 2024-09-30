@@ -46,6 +46,7 @@ private:
 class Discovery
 {
 public:
+    using ptr = shared_ptr<Discovery>;
     using NotifyCallback = std::function<void(const std::string &, const std::string &)>;
     Discovery(const std::string &host, const std::string &basedir, const NotifyCallback &put_cb, const NotifyCallback &del_cb)
         : _client(std::make_shared<etcd::Client>(host)),

@@ -7,6 +7,7 @@ namespace chat_ns
     class SMS
     {
     public:
+        
         SMS(std::string_view phone, std::string_view secret)
             : _phone(phone),
               _client("api.smsbao.com")

@@ -1,16 +1,16 @@
+#pragma once
 #include <iostream>
 #include <memory>
 #include <vector>
 #include "utils.hpp"
 #include "models.hpp"
+#include <memory>
 
 namespace chat_ns
 {
 
     class UserTable
-    {
-    public:
-        // +-------------+-----------------+------+-----+---------+----------------+
+    {   // +-------------+-----------------+------+-----+---------+----------------+
         // | Field       | Type            | Null | Key | Default | Extra          |
         // +-------------+-----------------+------+-----+---------+----------------+
         // | id          | bigint unsigned | NO   | PRI | NULL    | auto_increment |
@@ -21,6 +21,9 @@ namespace chat_ns
         // | phone       | varchar(64)     | YES  | UNI | NULL    |                |
         // | avatar_id   | varchar(64)     | YES  |     | NULL    |                |
         // +-------------+-----------------+------+-----+---------+----------------+
+    public:
+        using ptr = std::shared_ptr<UserTable>;
+
         UserTable()
         {
             mysql = Utils::mysqlInit(DB_NAME, HOST, PORT, USER, PASSWD);
@@ -60,12 +63,12 @@ namespace chat_ns
             if (row != nullptr)
             {
                 user.id = std::stoull(row[0]);
-                user.userId = row[1];
+                user.user_id = row[1];
                 user.nickname = row[2];
                 user.description = row[3] ? row[3] : "";
                 user.password = row[4];
                 user.phone = row[5];
-                user.avatarId = row[6] ? row[6] : "";
+                user.avatar_id = row[6] ? row[6] : "";
                 mysql_free_result(res);
                 return true;
             }
@@ -100,12 +103,12 @@ namespace chat_ns
             if (row != nullptr)
             {
                 user.id = std::stoull(row[0]);
-                user.userId = row[1];
+                user.user_id = row[1];
                 user.nickname = row[2];
                 user.description = row[3] ? row[3] : "";
                 user.password = row[4];
                 user.phone = row[5];
-                user.avatarId = row[6] ? row[6] : "";
+                user.avatar_id = row[6] ? row[6] : "";
                 mysql_free_result(res);
                 return true;
             }
@@ -140,12 +143,12 @@ namespace chat_ns
             if (row != nullptr)
             {
                 user.id = std::stoull(row[0]);
-                user.userId = row[1];
+                user.user_id = row[1];
                 user.nickname = row[2];
                 user.description = row[3] ? row[3] : "";
                 user.password = row[4];
                 user.phone = row[5];
-                user.avatarId = row[6] ? row[6] : "";
+                user.avatar_id = row[6] ? row[6] : "";
                 mysql_free_result(res);
                 return true;
             }
@@ -194,25 +197,25 @@ namespace chat_ns
             {
                 User user;
                 user.id = std::stoull(row[0]);           // id (bigint unsigned)
-                user.userId = row[1];                    // user_id (varchar(64))
+                user.user_id = row[1];                    // user_id (varchar(64))
                 user.nickname = row[2];                  // nickname (varchar(64))
                 user.description = row[3] ? row[3] : ""; // description (text)
                 user.password = row[4];                  // password (varchar(64))
                 user.phone = row[5];                     // phone (varchar(64))
-                user.avatarId = row[6] ? row[6] : "";    // avatar_id (varchar(64))
+                user.avatar_id = row[6] ? row[6] : "";    // avatar_id (varchar(64))
 
-                users[user.userId] = user; // 将用户添加到哈希表中
+                users[user.user_id] = user; // 将用户添加到哈希表中
             }
 
             mysql_free_result(res);
             return true;
         }
 
-        bool createUser(User user)
+        bool createUser(const User &user)
         {
             std::string sql;
             sql.append("INSERT INTO users (user_id, nickname, description, password, phone, avatar_id) VALUES ('");
-            sql.append(user.userId);
+            sql.append(user.user_id);
             sql.append("', '");
             sql.append(user.nickname);
             sql.append("', '");
@@ -222,7 +225,7 @@ namespace chat_ns
             sql.append("', '");
             sql.append(user.phone);
             sql.append("', '");
-            sql.append(user.avatarId);
+            sql.append(user.avatar_id);
             sql.append("');");
 
             mtx.lock();
@@ -232,7 +235,7 @@ namespace chat_ns
             return result;
         }
 
-        bool updateUserInfo(User user)
+        bool updateUserInfo(const User &user)
         {
             std::string sql;
             sql.append("UPDATE users SET nickname = '");
@@ -243,10 +246,10 @@ namespace chat_ns
             sql.append(user.password);
             sql.append("', phone = '");
             sql.append(user.phone);
-            sql.append("', avatar_id = '");
-            sql.append(user.avatarId);
+            sql.append("', avatar_id = '");  
+            sql.append(user.avatar_id);
             sql.append("' WHERE user_id = '");
-            sql.append(user.userId);
+            sql.append(user.user_id);
             sql.append("';");
 
             mtx.lock();

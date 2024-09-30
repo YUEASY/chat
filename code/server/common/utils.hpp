@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -12,6 +13,15 @@ namespace chat_ns
     class Utils
     {
     public:
+
+        static std::string vcode()
+        {
+            std::random_device rd;
+            std::default_random_engine generator(rd());
+            std::uniform_int_distribution<int> distribution(1000, 9999);
+            return std::to_string(distribution(generator));
+        }
+
         static std::string uuid()
         {
             // 生成前8位随机字母数字
