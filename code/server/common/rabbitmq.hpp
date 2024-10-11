@@ -15,6 +15,8 @@ class MQClient
     using MessageCallback = std::function<void(const char *, size_t)>;
 
 public:
+    using ptr = std::shared_ptr<MQClient>;
+    
     MQClient(std::string_view user, std::string_view passwd, std::string_view host)
     {
         _loop = EV_DEFAULT;
