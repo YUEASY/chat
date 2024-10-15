@@ -54,7 +54,7 @@ public:
           _put_cb(put_cb),
           _del_cb(del_cb)
     {
-        auto resp = _client->get(basedir).get();
+        auto resp = _client->ls(basedir).get();
         if (!resp.is_ok())
         {
             LOG_ERROR("获取目录失败：{}", resp.error_message());

@@ -50,7 +50,7 @@ public:
             .onSuccess([queue]()
                        { LOG_DEBUG("队列 {} 创建成功！", queue); });
 
-        _channel->bindQueue("test-exchange", "test-queue", "test-queue-key")
+        _channel->bindQueue(exchange, queue, routing_key)
             .onError([exchange, queue](const char *message)
                      { LOG_ERROR("{}-{}绑定失败：{}", exchange, queue, message); exit(0); })
             .onSuccess([exchange, queue]()

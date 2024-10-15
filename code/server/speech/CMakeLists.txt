@@ -16,3 +16,5 @@ set(SOURCES
 add_executable(speech_server ${SOURCES})
 # 添加标准路径中的第三方库
 target_link_libraries(speech_server -lgflags -ljsoncpp -lpthread -lgtest -lgflags -lspdlog -lfmt -lbrpc -lssl -lcrypto -lprotobuf -lleveldb -letcd-cpp-api -lcpprest -lcurl)
+
+include_directories(../common ../proto/cpp_out)

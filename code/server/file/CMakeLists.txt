@@ -32,3 +32,4 @@ target_link_libraries(file_server
     jsoncpp
 )
 
+include_directories(../common ../proto/cpp_out)

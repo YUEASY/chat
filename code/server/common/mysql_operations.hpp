@@ -67,7 +67,7 @@ namespace chat_ns
             MYSQL_RES *res = mysql_store_result(mysql);
             if (res == nullptr)
             {
-                LOG_ERROR("mysql store result error: " + std::string(mysql_error(mysql)));
+                LOG_ERROR("mysql store result error: {}", std::string(mysql_error(mysql)));
                 mtx.unlock();
                 return false;
             }
@@ -107,7 +107,7 @@ namespace chat_ns
             MYSQL_RES *res = mysql_store_result(mysql);
             if (res == nullptr)
             {
-                LOG_ERROR("mysql store result error: " + std::string(mysql_error(mysql)));
+                LOG_ERROR("mysql store result error: {}", std::string(mysql_error(mysql)));
                 mtx.unlock();
                 return false;
             }
@@ -147,7 +147,7 @@ namespace chat_ns
             MYSQL_RES *res = mysql_store_result(mysql);
             if (res == nullptr)
             {
-                LOG_ERROR("mysql store result error: " + std::string(mysql_error(mysql)));
+                LOG_ERROR("mysql store result error: {}", std::string(mysql_error(mysql)));
                 mtx.unlock();
                 return false;
             }
@@ -200,7 +200,7 @@ namespace chat_ns
             MYSQL_RES *res = mysql_store_result(mysql);
             if (res == nullptr)
             {
-                LOG_ERROR("mysql store result error: " + std::string(mysql_error(mysql)));
+                LOG_ERROR("mysql store result error: {}", std::string(mysql_error(mysql)));
                 mtx.unlock();
                 return false;
             }
@@ -352,7 +352,7 @@ namespace chat_ns
             MYSQL_RES *res = mysql_store_result(mysql);
             if (res == nullptr)
             {
-                LOG_ERROR("mysql store result error: " + std::string(mysql_error(mysql)));
+                LOG_ERROR("mysql store result error: {}", std::string(mysql_error(mysql)));
                 return false;
             }
 
@@ -370,6 +370,221 @@ namespace chat_ns
         }
     };
 
+    class MessageTable : public BaseTable
+    {
+    public:
+        //+--------------+------------------+------+-----+---------+----------------+
+        //| Field        | Type             | Null | Key | Default | Extra          |
+        //+--------------+------------------+------+-----+---------+----------------+
+        //| id           | bigint unsigned  | NO   | PRI | NULL    | auto_increment |
+        //| message_id   | varchar(64)      | NO   | UNI | NULL    |                |
+        //| session_id   | varchar(64)      | NO   | MUL | NULL    |                |
+        //| user_id      | varchar(64)      | NO   |     | NULL    |                |
+        //| message_type | tinyint unsigned | NO   |     | NULL    |                |
+        //| create_time  | timestamp        | YES  |     | NULL    |                |
+        //| content      | text             | YES  |     | NULL    |                |
+        //| file_id      | varchar(64)      | YES  |     | NULL    |                |
+        //| file_name    | varchar(128)     | YES  |     | NULL    |                |
+        //| file_size    | int unsigned     | YES  |     | NULL    |                |
+        //+--------------+------------------+------+-----+---------+----------------+
+        using ptr = std::shared_ptr<MessageTable>;
 
+        // 获取消息信息（通过 message_id）
+        bool getMessageById(std::string_view message_id, Message &message)
+        {
+            std::string sql = "SELECT * FROM messages WHERE message_id = '";
+            sql.append(message_id);
+            sql.append("';");
+
+            mtx.lock();
+            if (!Utils::mysqlQuery(mysql, sql))
+            {
+                mtx.unlock();
+                return false;
+            }
+
+            MYSQL_RES *res = mysql_store_result(mysql);
+            if (res == nullptr)
+            {
+                LOG_ERROR("mysql store result error: {}", std::string(mysql_error(mysql)));
+                mtx.unlock();
+                return false;
+            }
+            mtx.unlock();
+
+            MYSQL_ROW row = mysql_fetch_row(res);
+            if (row != nullptr)
+            {
+                message.id = std::stoull(row[0]);
+                message.message_id = row[1];
+                message.session_id = row[2];
+                message.user_id = row[3];
+                message.message_type = static_cast<uint8_t>(std::stoul(row[4]));
+                message.create_time = row[5] ? row[5] : "";
+                message.content = row[6] ? row[6] : "";
+                message.file_id = row[7] ? row[7] : "";
+                message.file_name = row[8] ? row[8] : "";
+                message.file_size = row[9] ? std::stoul(row[9]) : 0;
+
+                mysql_free_result(res);
+                return true;
+            }
+
+            mysql_free_result(res);
+            return false;
+        }
+
+        // 创建新消息
+        bool createMessage(const Message &message)
+        {
+            std::string sql;
+            sql.append("INSERT INTO messages (message_id, session_id, user_id, message_type, create_time, content, file_id, file_name, file_size) VALUES ('");
+            sql.append(message.message_id);
+            sql.append("', '");
+            sql.append(message.session_id);
+            sql.append("', '");
+            sql.append(message.user_id);
+            sql.append("', '");
+            sql.append(std::to_string(message.message_type));
+            sql.append("', '");
+            sql.append(message.create_time);
+            sql.append("', '");
+            sql.append(message.content);
+            sql.append("', '");
+            sql.append(message.file_id);
+            sql.append("', '");
+            sql.append(message.file_name);
+            sql.append("', ");
+            sql.append(std::to_string(message.file_size));
+            sql.append(");");
+
+            mtx.lock();
+            bool result = Utils::mysqlQuery(mysql, sql);
+            mtx.unlock();
+
+            return result;
+        }
+
+        // 批量获取消息信息1
+        bool getMessagesBySessionId(std::string_view session_id, std::vector<Message> &messages, int limit = -1)
+        {
+            std::string sql = "SELECT * FROM messages WHERE session_id = '";
+            sql.append(session_id);
+            sql.append("' ORDER BY create_time DESC"); // 按创建时间降序排列
+
+            if (limit > 0)
+            {
+                sql.append(" LIMIT ");
+                sql.append(std::to_string(limit)); // 只获取最近的 limit 条消息
+            }
+
+            sql.append(";");
+
+            mtx.lock();
+            if (!Utils::mysqlQuery(mysql, sql))
+            {
+                mtx.unlock();
+                return false;
+            }
+
+            MYSQL_RES *res = mysql_store_result(mysql);
+            if (res == nullptr)
+            {
+                LOG_ERROR("mysql store result error: {}", std::string(mysql_error(mysql)));
+                mtx.unlock();
+                return false;
+            }
+            mtx.unlock();
+
+            MYSQL_ROW row;
+            while ((row = mysql_fetch_row(res)) != nullptr)
+            {
+                Message message;
+                message.id = std::stoull(row[0]);
+                message.message_id = row[1];
+                message.session_id = row[2];
+                message.user_id = row[3];
+                message.message_type = static_cast<uint8_t>(std::stoul(row[4]));
+                message.create_time = row[5] ? row[5] : "";
+                message.content = row[6] ? row[6] : "";
+                message.file_id = row[7] ? row[7] : "";
+                message.file_name = row[8] ? row[8] : "";
+                message.file_size = row[9] ? std::stoul(row[9]) : 0;
+
+                messages.push_back(message);
+            }
+
+            mysql_free_result(res);
+            return true;
+        }
+
+        // 批量获取消息信息2
+        bool getMessagesBySessionId(std::string_view session_id, std::vector<Message> &messages, const std::string &start_time, const std::string &end_time)
+        {
+            std::string sql = "SELECT * FROM messages WHERE session_id = '";
+            sql.append(session_id);
+            sql.append("' AND create_time BETWEEN '");
+            sql.append(start_time);
+            sql.append("' AND '");
+            sql.append(end_time);
+            sql.append("' ORDER BY create_time DESC;"); // 按创建时间降序排列
+
+            mtx.lock();
+            if (!Utils::mysqlQuery(mysql, sql))
+            {
+                mtx.unlock();
+                return false;
+            }
+
+            MYSQL_RES *res = mysql_store_result(mysql);
+            if (res == nullptr)
+            {
+                LOG_ERROR("mysql store result error: {}", std::string(mysql_error(mysql)));
+                mtx.unlock();
+                return false;
+            }
+            mtx.unlock();
+
+            MYSQL_ROW row;
+            while ((row = mysql_fetch_row(res)) != nullptr)
+            {
+                Message message;
+                message.id = std::stoull(row[0]);
+                message.message_id = row[1];
+                message.session_id = row[2];
+                message.user_id = row[3];
+                message.message_type = static_cast<uint8_t>(std::stoul(row[4]));
+                message.create_time = row[5] ? row[5] : "";
+                message.content = row[6] ? row[6] : "";
+                message.file_id = row[7] ? row[7] : "";
+                message.file_name = row[8] ? row[8] : "";
+                message.file_size = row[9] ? std::stoul(row[9]) : 0;
+
+                messages.push_back(message);
+            }
+
+            mysql_free_result(res);
+            return true;
+        }
+
+        // 删除消息
+        bool deleteMessagesBySessionId(std::string_view session_id)
+        {
+            std::string sql = "DELETE FROM messages WHERE session_id = '";
+            sql.append(session_id);
+            sql.append("';");
+
+            mtx.lock();
+            if (!Utils::mysqlQuery(mysql, sql))
+            {
+                LOG_ERROR("Failed to delete messages for session_id: " + std::string(session_id));
+                mtx.unlock();
+                return false;
+            }
+            mtx.unlock();
+
+            return true;
+        }
+    };
 
 } // namespace chat_ns

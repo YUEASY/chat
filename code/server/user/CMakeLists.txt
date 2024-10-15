@@ -15,3 +15,5 @@ set(SOURCES
 add_executable(user_server ${SOURCES})
 # 添加标准路径中的第三方库
 target_link_libraries(user_server -ljsoncpp  -lpthread -lgtest -lgflags -lspdlog -lfmt -lbrpc -lssl -lcrypto -lprotobuf -lleveldb -letcd-cpp-api -lcpprest -lcurl -lcpr -lelasticlient -lhiredis -lredis++ -lmysqlclient)
+
+include_directories(../common ../proto/cpp_out)

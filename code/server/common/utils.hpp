@@ -124,7 +124,7 @@ namespace chat_ns
         {
             if (mysql_query(mysql, sql.c_str()) != 0)
             {
-                LOG_ERROR("mysql query error:" + sql);
+                LOG_ERROR("mysql query error:{}", sql);
                 LOG_ERROR(mysql_error(mysql));
                 return false;
             }

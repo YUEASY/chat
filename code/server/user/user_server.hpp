@@ -1,16 +1,18 @@
 #include <brpc/server.h>
 #include <butil/logging.h>
-#include "../common/etcd.hpp"
-#include "../common/logger.hpp"
-#include "../common/sms.hpp"
-#include "../common/es_operations.hpp"
-#include "../common/mysql_operations.hpp"
-#include "../common/redis_operations.hpp"
-#include "../common/utils.hpp"
-#include "../common/channel.hpp"
-#include "../proto/cpp_out/base.pb.h"
-#include "../proto/cpp_out/user.pb.h"
-#include "../proto/cpp_out/file.pb.h"
+
+#include "etcd.hpp"
+#include "logger.hpp"
+#include "sms.hpp"
+#include "es_operations.hpp"
+#include "mysql_operations.hpp"
+#include "redis_operations.hpp"
+#include "utils.hpp"
+#include "channel.hpp"
+
+#include "base.pb.h"
+#include "user.pb.h"
+#include "file.pb.h"
 
 
 namespace chat_ns

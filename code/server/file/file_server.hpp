@@ -1,11 +1,12 @@
 #include <brpc/server.h>
 #include <butil/logging.h>
-#include "../common/asr.hpp"
-#include "../common/etcd.hpp"
-#include "../common/logger.hpp"
-#include "../common/utils.hpp"
-#include "../proto/cpp_out/base.pb.h"
-#include "../proto/cpp_out/file.pb.h"
+#include "asr.hpp"
+#include "etcd.hpp"
+#include "logger.hpp"
+#include "utils.hpp"
+
+#include "base.pb.h"
+#include "file.pb.h"
 
 namespace chat_ns
 {

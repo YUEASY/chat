@@ -1,9 +1,11 @@
 #include <brpc/server.h>
 #include <butil/logging.h>
-#include "../common/asr.hpp"
-#include "../common/etcd.hpp"
-#include "../common/logger.hpp"
-#include "../proto/cpp_out/speech.pb.h"
+#include "asr.hpp"
+#include "etcd.hpp"
+#include "logger.hpp"
+
+#include "speech.pb.h"
+
 namespace chat_ns
 {
     class SpeechServiceImpl : public chat_ns::SpeechService

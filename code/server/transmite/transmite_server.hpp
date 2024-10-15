@@ -1,15 +1,15 @@
 #include <brpc/server.h>
 #include <butil/logging.h>
-#include "../common/etcd.hpp"
-#include "../common/logger.hpp"
-#include "../common/rabbitmq.hpp"
-#include "../common/utils.hpp"
-#include "../common/channel.hpp"
-#include "../common/mysql_operations.hpp"
+#include "etcd.hpp"
+#include "logger.hpp"
+#include "rabbitmq.hpp"
+#include "utils.hpp"
+#include "channel.hpp"
+#include "mysql_operations.hpp"
 
-#include "../proto/cpp_out/base.pb.h"
-#include "../proto/cpp_out/user.pb.h"
-#include "../proto/cpp_out/transmite.pb.h"
+#include "base.pb.h"
+#include "user.pb.h"
+#include "transmite.pb.h"
 
 namespace chat_ns
 {

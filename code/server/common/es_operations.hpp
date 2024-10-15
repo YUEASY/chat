@@ -62,7 +62,7 @@ namespace chat_ns
                                         .appendShouldMatch("phone.keyword", key)
                                         .appendShouldMatch("user_id.keyword", key)
                                         .appendShouldMatch("nickname", key)
-                                        .appendMustNotTerm("user_id.keyword", uid_list)
+                                        .appendMustNotTerms("user_id.keyword", uid_list)
                                         .search();
             if (json_user.isArray() == false)
             {
@@ -147,6 +147,33 @@ namespace chat_ns
             LOG_INFO("消息数据删除成功!");
             return true;
         }
+        std::vector<Message> search(const std::string &key, const std::string &ssid)
+        {
+            std::vector<Message> res;
+            Json::Value json_user = ESSearch(_es_client, "message")
+                                        .appendMustTerm("chat_session_id.keyword", ssid)
+                                        .appendMustMatch("content", key)
+                                        .search();
+            if (json_user.isArray() == false)
+            {
+                LOG_ERROR("用户搜索结果为空，或者结果不是数组类型");
+                return res;
+            }
+            int sz = json_user.size();
+            LOG_DEBUG("检索结果条目数量：{}", sz);
+            for (int i = 0; i < sz; i++)
+            {
+                Message message;
+                message.user_id = json_user[i]["_source"]["user_id"].asString();
+                message.message_id = json_user[i]["_source"]["message_id"].asString();
+                message.create_time = json_user[i]["_source"]["create_time"].asInt64();
+                message.session_id = json_user[i]["_source"]["chat_session_id"].asString();
+                message.content = json_user[i]["_source"]["content"].asString();
+                res.push_back(message);
+            }
+            return res;
+        }
+
     private:
         std::shared_ptr<elasticlient::Client> _es_client;
     };
