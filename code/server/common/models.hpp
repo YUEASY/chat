@@ -22,6 +22,17 @@ namespace chat_ns
         unsigned char chat_session_type; // tinyint
     };
 
+    struct SingleChatSession
+    {
+        std::string chat_session_id;
+        std::string friend_id;
+    };
+
+    struct GroupChatSession {
+        std::string chat_session_id;
+        std::string chat_session_name;
+    };
+
     struct ChatSessionMember
     {
         unsigned long long id;  // BIGINT UNSIGNED

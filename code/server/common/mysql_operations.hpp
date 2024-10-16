@@ -222,7 +222,8 @@ namespace chat_ns
             }
 
             mysql_free_result(res);
-            return true;
+
+            return !users.empty(); // 如果users为空，则返回false
         }
 
         bool createUser(const User &user)
@@ -366,7 +367,8 @@ namespace chat_ns
             }
 
             mysql_free_result(res);
-            return true;
+
+            return !user_ids.empty(); // 如果 user_ids 为空，返回 false
         }
     };
 
@@ -465,7 +467,6 @@ namespace chat_ns
             return result;
         }
 
-        // 批量获取消息信息1
         bool getMessagesBySessionId(std::string_view session_id, std::vector<Message> &messages, int limit = -1)
         {
             std::string sql = "SELECT * FROM messages WHERE session_id = '";
@@ -480,10 +481,10 @@ namespace chat_ns
 
             sql.append(";");
 
-            mtx.lock();
+            std::lock_guard<std::mutex> lock(mtx); // 自动管理锁
+
             if (!Utils::mysqlQuery(mysql, sql))
             {
-                mtx.unlock();
                 return false;
             }
 
@@ -491,10 +492,8 @@ namespace chat_ns
             if (res == nullptr)
             {
                 LOG_ERROR("mysql store result error: {}", std::string(mysql_error(mysql)));
-                mtx.unlock();
                 return false;
             }
-            mtx.unlock();
 
             MYSQL_ROW row;
             while ((row = mysql_fetch_row(res)) != nullptr)
@@ -515,7 +514,8 @@ namespace chat_ns
             }
 
             mysql_free_result(res);
-            return true;
+
+            return !messages.empty(); // 如果 messages 为空，则返回 false
         }
 
         // 批量获取消息信息2
@@ -564,7 +564,7 @@ namespace chat_ns
             }
 
             mysql_free_result(res);
-            return true;
+            return !messages.empty();
         }
 
         // 删除消息
@@ -584,6 +584,337 @@ namespace chat_ns
             mtx.unlock();
 
             return true;
+        }
+    };
+
+    class RelationTable : public BaseTable
+    {
+    public:
+        //+---------+-----------------+------+-----+---------+----------------+
+        //| Field   | Type            | Null | Key | Default | Extra          |
+        //+---------+-----------------+------+-----+---------+----------------+
+        //| id      | bigint unsigned | NO   | PRI | NULL    | auto_increment |
+        //| user_id | varchar(64)     | NO   | MUL | NULL    |                |
+        //| peer_id | varchar(64)     | NO   |     | NULL    |                |
+        //+---------+-----------------+------+-----+---------+----------------+
+        using ptr = std::shared_ptr<RelationTable>;
+
+        // 新增用户关系
+        bool addFriend(const std::string &user_id, const std::string &peer_id)
+        {
+            std::string sql1 = "INSERT INTO relations (user_id, peer_id) VALUES ('" + user_id + "', '" + peer_id + "');";
+            std::string sql2 = "INSERT INTO relations (user_id, peer_id) VALUES ('" + peer_id + "', '" + user_id + "');"; // 反向关系
+
+            mtx.lock();
+            bool result1 = Utils::mysqlQuery(mysql, sql1);
+            bool result2 = Utils::mysqlQuery(mysql, sql2);
+            mtx.unlock();
+
+            return result1 && result2;
+        }
+
+        // 移除用户关系
+        bool removeFriend(const std::string &user_id, const std::string &peer_id)
+        {
+            std::string sql1 = "DELETE FROM relations WHERE user_id = '" + user_id + "' AND peer_id = '" + peer_id + "';";
+            std::string sql2 = "DELETE FROM relations WHERE user_id = '" + peer_id + "' AND peer_id = '" + user_id + "';"; // 反向关系
+
+            mtx.lock();
+            bool result1 = Utils::mysqlQuery(mysql, sql1);
+            bool result2 = Utils::mysqlQuery(mysql, sql2);
+            mtx.unlock();
+
+            return result1 && result2;
+        }
+
+        // 判断两人是否是好友关系
+        bool areFriends(const std::string &user_id, const std::string &peer_id, bool &res)
+        {
+            std::string sql = "SELECT COUNT(*) FROM relations WHERE user_id = '" + user_id + "' AND peer_id = '" + peer_id + "';";
+
+            mtx.lock();
+            if (!Utils::mysqlQuery(mysql, sql))
+            {
+                mtx.unlock();
+                return false; // 查询失败
+            }
+            MYSQL_RES *query_result = mysql_store_result(mysql);
+            MYSQL_ROW row = mysql_fetch_row(query_result);
+            res = (row && std::stoi(row[0]) > 0); // 判断是否存在关系
+
+            mysql_free_result(query_result);
+            mtx.unlock();
+            return true; // 查询成功
+        }
+
+        // 获取用户的所有好友 ID
+        bool getFriendIds(const std::string &user_id, std::vector<std::string> &friend_ids)
+        {
+            std::string sql = "SELECT peer_id FROM relations WHERE user_id = '" + user_id + "';";
+            mtx.lock();
+            if (!Utils::mysqlQuery(mysql, sql))
+            {
+                mtx.unlock();
+                return false;
+            }
+
+            MYSQL_RES *res = mysql_store_result(mysql);
+            if (res == nullptr)
+            {
+                LOG_ERROR("mysql store result error: {}", std::string(mysql_error(mysql)));
+                mtx.unlock();
+                return false;
+            }
+
+            MYSQL_ROW row;
+            while ((row = mysql_fetch_row(res)) != nullptr)
+            {
+                friend_ids.push_back(row[0]);
+            }
+
+            mysql_free_result(res);
+            mtx.unlock();
+            return !friend_ids.empty();
+        }
+
+        // 获取好友详细信息
+        bool getFriendDetails(const std::string &user_id, std::vector<User> &friends)
+        {
+            std::string sql = "SELECT u.* FROM users u INNER JOIN relations r ON u.user_id = r.peer_id WHERE r.user_id = '" + user_id + "';";
+            mtx.lock();
+            if (!Utils::mysqlQuery(mysql, sql))
+            {
+                mtx.unlock();
+                return false;
+            }
+
+            MYSQL_RES *res = mysql_store_result(mysql);
+            if (res == nullptr)
+            {
+                LOG_ERROR("mysql store result error: {}", std::string(mysql_error(mysql)));
+                mtx.unlock();
+                return false;
+            }
+
+            MYSQL_ROW row;
+            while ((row = mysql_fetch_row(res)) != nullptr)
+            {
+                User friend_info;
+                friend_info.id = std::stoull(row[0]);
+                friend_info.user_id = row[1];
+                friend_info.nickname = row[2] ? row[2] : "";
+                friend_info.description = row[3] ? row[3] : "";
+                friend_info.password = row[4] ? row[4] : "";
+                friend_info.phone = row[5] ? row[5] : "";
+                friend_info.avatar_id = row[6] ? row[6] : "";
+
+                friends.push_back(friend_info);
+            }
+
+            mysql_free_result(res);
+            mtx.unlock();
+            return !friends.empty();
+        }
+    };
+
+    class ChatSessionTable : public BaseTable
+    {
+    public:
+        //+-------------------+-----------------+------+-----+---------+----------------+
+        //| Field             | Type            | Null | Key | Default | Extra          |
+        //+-------------------+-----------------+------+-----+---------+----------------+
+        //| id                | bigint unsigned | NO   | PRI | NULL    | auto_increment |
+        //| chat_session_id   | varchar(64)     | NO   | UNI | NULL    |                |
+        //| chat_session_name | varchar(64)     | NO   |     | NULL    |                |
+        //| chat_session_type | tinyint         | NO   |     | NULL    |                |
+        //+-------------------+-----------------+------+-----+---------+----------------+
+        using ptr = std::shared_ptr<ChatSessionTable>;
+
+        bool createChatSession(const ChatSession &session)
+        {
+            std::string sql = "INSERT INTO chat_sessions (chat_session_id, chat_session_name, chat_session_type) VALUES ('" +
+                              session.chat_session_id + "', '" + session.chat_session_name + "', " + std::to_string(session.chat_session_type) + ");";
+            mtx.lock();
+            bool result = Utils::mysqlQuery(mysql, sql);
+            mtx.unlock();
+            return result;
+        }
+
+        bool deleteChatSession(const std::string &chat_session_id)
+        {
+            std::string sql = "DELETE FROM chat_sessions WHERE chat_session_id = '" + chat_session_id + "';";
+            mtx.lock();
+            bool result = Utils::mysqlQuery(mysql, sql);
+            mtx.unlock();
+            return result;
+        }
+
+        bool getChatSessionById(const std::string &chat_session_id, ChatSession &session)
+        {
+            std::string sql = "SELECT * FROM chat_sessions WHERE chat_session_id = '" + chat_session_id + "';";
+
+            mtx.lock();
+            if (!Utils::mysqlQuery(mysql, sql))
+            {
+                mtx.unlock();
+                return false;
+            }
+            MYSQL_RES *res = mysql_store_result(mysql);
+            MYSQL_ROW row = mysql_fetch_row(res);
+            if (row != nullptr)
+            {
+                session.id = std::stoull(row[0]);
+                session.chat_session_id = row[1];
+                session.chat_session_name = row[2];
+                session.chat_session_type = static_cast<uint8_t>(std::stoi(row[3]));
+                mysql_free_result(res);
+                mtx.unlock();
+                return true;
+            }
+
+            mysql_free_result(res);
+            mtx.unlock();
+            return false; // 未找到会话
+        }
+
+        bool getChatSessionsByUserIdType1(const std::string &user_id, std::vector<SingleChatSession> &sessions)
+        {
+            std::string sql = R"(
+        SELECT csm2.session_id, csm2.user_id 
+        FROM chat_sessions AS cs
+        JOIN chat_session_members AS csm ON csm.chat_session_id = cs.chat_session_id AND cs.chat_session_type = 1
+        JOIN chat_session_members AS csm2 ON cs.chat_session_id = csm2.chat_session_id AND csm2.user_id != csm.user_id
+        WHERE csm.user_id = ')" +
+                              user_id + "';";
+
+            mtx.lock();
+            if (!Utils::mysqlQuery(mysql, sql))
+            {
+                mtx.unlock();
+                return false;
+            }
+
+            MYSQL_RES *res = mysql_store_result(mysql);
+            MYSQL_ROW row;
+            while ((row = mysql_fetch_row(res)) != nullptr)
+            {
+                SingleChatSession session;
+                session.chat_session_id = row[0];
+                session.friend_id= row[1];
+                sessions.push_back(session);
+            }
+
+            mysql_free_result(res);
+            mtx.unlock();
+            return !sessions.empty();
+        }
+
+        bool getChatSessionsByUserIdType2(const std::string &user_id, std::vector<GroupChatSession> &sessions)
+        {
+            std::string sql = R"(
+        SELECT cs.chat_session_id, cs.chat_session_name 
+        FROM chat_sessions AS cs
+        JOIN chat_session_members AS csm ON cs.chat_session_id = csm.chat_session_id AND cs.chat_session_type = 2
+        WHERE csm.user_id = ')" +
+                              user_id + "';";
+
+            mtx.lock();
+            if (!Utils::mysqlQuery(mysql, sql))
+            {
+                mtx.unlock();
+                return false;
+            }
+
+            MYSQL_RES *res = mysql_store_result(mysql);
+            MYSQL_ROW row;
+            while ((row = mysql_fetch_row(res)) != nullptr)
+            {
+                GroupChatSession session;
+                session.chat_session_id = row[0];
+                session.chat_session_name = row[1];
+                sessions.push_back(session);
+            }
+
+            mysql_free_result(res);
+            mtx.unlock();
+            return !sessions.empty();
+        }
+    };
+
+    class FriendApplyTable : public BaseTable
+    {
+    public:
+        //+----------+-----------------+------+-----+---------+----------------+
+        //| Field    | Type            | Null | Key | Default | Extra          |
+        //+----------+-----------------+------+-----+---------+----------------+
+        //| id       | bigint unsigned | NO   | PRI | NULL    | auto_increment |
+        //| event_id | varchar(64)     | NO   | UNI | NULL    |                |
+        //| user_id  | varchar(64)     | NO   | MUL | NULL    |                |
+        //| peer_id  | varchar(64)     | NO   | MUL | NULL    |                |
+        //+----------+-----------------+------+-----+---------+----------------+
+        using ptr = std::shared_ptr<FriendApplyTable>;
+
+        // 新增好友申请
+        bool addFriendApply(const FriendApply &apply)
+        {
+            std::string sql = "INSERT INTO friend_apply (event_id, user_id, peer_id) VALUES ('" + apply.event_id + "', '" + apply.user_id + "', '" + apply.peer_id + "');";
+            mtx.lock();
+            bool result = Utils::mysqlQuery(mysql, sql);
+            mtx.unlock();
+            return result;
+        }
+
+        // 查询用户的所有好友申请，返回好友的用户 ID
+        bool getFriendAppliesByUserId(const std::string &user_id, std::vector<std::string> &uids)
+        {
+            std::string sql = "SELECT user_id FROM friend_apply WHERE peer_id = '" + user_id + "';";
+
+            mtx.lock();
+            if (!Utils::mysqlQuery(mysql, sql))
+            {
+                mtx.unlock();
+                return false;
+            }
+
+            MYSQL_RES *res = mysql_store_result(mysql);
+            if (res == nullptr)
+            {
+                LOG_ERROR("mysql store result error: {}", std::string(mysql_error(mysql)));
+                mtx.unlock();
+                return false;
+            }
+
+            MYSQL_ROW row;
+            while ((row = mysql_fetch_row(res)) != nullptr)
+            {
+                if (row[0]) // 确保 row[0] 不为空
+                {
+                    uids.push_back(row[0]);
+                }
+            }
+
+            mysql_free_result(res);
+            mtx.unlock();
+            return !uids.empty();
+        }
+
+        // 删除好友申请
+        bool deleteFriendApply(const std::string &event_id)
+        {
+            std::string sql = "DELETE FROM friend_apply WHERE event_id = '" + event_id + "';";
+            mtx.lock();
+            bool result = Utils::mysqlQuery(mysql, sql);
+            mtx.unlock();
+            return result;
+        }
+
+        bool deleteFriendApply(const std::string &uid, const std::string &pid)
+        {
+            std::string sql = "DELETE FROM friend_apply WHERE user_id = '" + uid + "' AND peer_id = '" + pid + "';";
+            mtx.lock();
+            bool result = Utils::mysqlQuery(mysql, sql);
+            mtx.unlock();
+            return result;
         }
     };
 

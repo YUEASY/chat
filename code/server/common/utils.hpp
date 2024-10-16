@@ -13,7 +13,6 @@ namespace chat_ns
     class Utils
     {
     public:
-
         static std::string vcode()
         {
             std::random_device rd;
@@ -52,35 +51,35 @@ namespace chat_ns
         }
         static bool readFile(std::string_view filename, std::string &body)
         {
-            std::ifstream file(filename.data(),std::ios::binary | std::ios::in);
+            std::ifstream file(filename.data(), std::ios::binary | std::ios::in);
             if (!file.is_open())
             {
-                LOG_ERROR("打开文件{}失败",filename.data());
-                return false; 
+                LOG_ERROR("打开文件{}失败", filename.data());
+                return false;
             }
 
             // body.assign((std::istreambuf_iterator<char>(file)),
             //             std::istreambuf_iterator<char>());
-            file.seekg(0,std::ios::end);
+            file.seekg(0, std::ios::end);
             size_t flen = file.tellg();
-            file.seekg(0,std::ios::beg);
+            file.seekg(0, std::ios::beg);
             body.resize(flen);
-            file.read(&body[0],flen);
-            if(file.good() == false)
+            file.read(&body[0], flen);
+            if (file.good() == false)
             {
-                LOG_ERROR("读取文件{}失败",filename.data());
+                LOG_ERROR("读取文件{}失败", filename.data());
                 file.close();
                 return false;
             }
             file.close();
-            return true; 
+            return true;
         }
         static bool writeFile(std::string_view filename, const std::string &body)
         {
             std::ofstream file(filename.data(), std::ios::binary | std::ios::out | std::ios::trunc);
             if (!file.is_open())
             {
-                return false; 
+                return false;
             }
 
             file << body;
@@ -91,7 +90,7 @@ namespace chat_ns
                 return false;
             }
             file.close();
-            return true;  
+            return true;
         }
 
         static MYSQL *mysqlInit(const char *db, const char *host = "127.0.0.1", const char *port = "3306", const char *user = "root", const char *passwd = "123456", const char *unix_socket = nullptr, unsigned long client_flag = 0)
