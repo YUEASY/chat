@@ -780,10 +780,10 @@ namespace chat_ns
         bool getChatSessionsByUserIdType1(const std::string &user_id, std::vector<SingleChatSession> &sessions)
         {
             std::string sql = R"(
-        SELECT csm2.session_id, csm2.user_id 
+        SELECT cs.chat_session_id, csm2.user_id 
         FROM chat_sessions AS cs
-        JOIN chat_session_members AS csm ON csm.chat_session_id = cs.chat_session_id AND cs.chat_session_type = 1
-        JOIN chat_session_members AS csm2 ON cs.chat_session_id = csm2.chat_session_id AND csm2.user_id != csm.user_id
+        JOIN chat_session_members AS csm ON csm.session_id = cs.chat_session_id AND cs.chat_session_type = 1
+        JOIN chat_session_members AS csm2 ON cs.chat_session_id = csm2.session_id AND csm2.user_id != csm.user_id
         WHERE csm.user_id = ')" +
                               user_id + "';";
 
@@ -814,7 +814,7 @@ namespace chat_ns
             std::string sql = R"(
         SELECT cs.chat_session_id, cs.chat_session_name 
         FROM chat_sessions AS cs
-        JOIN chat_session_members AS csm ON cs.chat_session_id = csm.chat_session_id AND cs.chat_session_type = 2
+        JOIN chat_session_members AS csm ON cs.chat_session_id = csm.session_id AND cs.chat_session_type = 2
         WHERE csm.user_id = ')" +
                               user_id + "';";
 
