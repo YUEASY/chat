@@ -287,10 +287,10 @@ namespace chat_ns
         //+------------+-----------------+------+-----+---------+----------------+
         using ptr = std::shared_ptr<ChatSessionMemberTable>;
 
-        bool addSessionMember(std::string_view session_id, std::string_view user_id)
+        bool addSessionMember(const ChatSessionMember &csm)
         {
             std::string sql = "INSERT INTO chat_session_members (session_id, user_id) VALUES ('";
-            sql.append(session_id).append("', '").append(user_id).append("');");
+            sql.append(csm.session_id).append("', '").append(csm.user_id).append("');");
 
             mtx.lock();
             bool result = Utils::mysqlQuery(mysql, sql);
@@ -299,14 +299,14 @@ namespace chat_ns
             return result;
         }
 
-        bool addSessionMembers(std::string_view session_id, std::vector<std::string_view> user_ids)
+        bool addSessionMembers(const std::vector<ChatSessionMember> &csms)
         {
             mtx.lock();
             bool result = true;
-            for (const auto &user_id : user_ids)
+            for (const auto &csm : csms)
             {
                 std::string sql = "INSERT INTO chat_session_members (session_id, user_id) VALUES ('";
-                sql.append(session_id).append("', '").append(user_id).append("');");
+                sql.append(csm.session_id).append("', '").append(csm.user_id).append("');");
                 if (!Utils::mysqlQuery(mysql, sql))
                 {
                     result = false; // 如果有任何插入失败，标记结果为 false
@@ -317,10 +317,10 @@ namespace chat_ns
             return result;
         }
 
-        bool deleteSessionMember(std::string_view session_id, std::string_view user_id)
+        bool deleteSessionMember(const ChatSessionMember &csm)
         {
             std::string sql = "DELETE FROM chat_session_members WHERE session_id = '";
-            sql.append(session_id).append("' and user_id = '").append(user_id).append("';");
+            sql.append(csm.session_id).append("' and user_id = '").append(csm.user_id).append("';");
             std::lock_guard<std::mutex> lock(mtx);
             return Utils::mysqlQuery(mysql, sql);
         }
@@ -333,7 +333,7 @@ namespace chat_ns
             return Utils::mysqlQuery(mysql, sql);
         }
 
-        bool getMembersBySession(std::string_view session_id, std::vector<std::string> &user_ids)
+        bool getMembersBySession(std::string_view session_id, std::vector<ChatSessionMember> &csms)
         {
             if (session_id.empty())
             {
@@ -362,13 +362,13 @@ namespace chat_ns
             {
                 if (row[0] != nullptr) // 检查 user_id 是否为 nullptr
                 {
-                    user_ids.emplace_back(row[0]); // 将 user_id 添加到结果 vector 中
+                    csms.push_back(ChatSessionMember(session_id.data(),row[0])); // 将 user_id 添加到结果 vector 中
                 }
             }
 
             mysql_free_result(res);
 
-            return !user_ids.empty(); // 如果 user_ids 为空，返回 false
+            return !csms.empty(); // 如果 user_ids 为空，返回 false
         }
     };
 
@@ -749,6 +749,22 @@ namespace chat_ns
             return result;
         }
 
+        bool deleteChatSession(const std::string &uid, const std::string &pid)
+        {
+            std::string sql = "DELETE FROM chat_sessions "
+                              "WHERE chat_session_id = ("
+                              "SELECT chat_session_id FROM single_chat_sessions "
+                              "WHERE csm1_user_id = '" +
+                              uid + "' "
+                                    "AND csm2_user_id = '" +
+                              pid + "' "
+                                    "AND chat_session_type = 1);";
+            mtx.lock();
+            bool result = Utils::mysqlQuery(mysql, sql);
+            mtx.unlock();
+            return result;
+        }
+
         bool getChatSessionById(const std::string &chat_session_id, ChatSession &session)
         {
             std::string sql = "SELECT * FROM chat_sessions WHERE chat_session_id = '" + chat_session_id + "';";
@@ -800,7 +816,7 @@ namespace chat_ns
             {
                 SingleChatSession session;
                 session.chat_session_id = row[0];
-                session.friend_id= row[1];
+                session.friend_id = row[1];
                 sessions.push_back(session);
             }
 
@@ -862,6 +878,31 @@ namespace chat_ns
             bool result = Utils::mysqlQuery(mysql, sql);
             mtx.unlock();
             return result;
+        }
+
+        bool applyExists(const std::string &uid, const std::string &pid, bool &res)
+        {
+            std::string sql = "SELECT COUNT(*) FROM friend_apply "
+                              "WHERE user_id = '" +
+                              uid + "' "
+                                    "AND peer_id = '" +
+                              pid + "';";
+
+            mtx.lock();
+            bool success = false;
+            try
+            {
+                int count = Utils::mysqlQuery(mysql, sql); // 假设这个函数可以返回查询的计数
+                LOG_DEBUG("{} - {} 好友事件数量：{}", uid, pid, count);
+                res = (count > 0);
+                success = true;
+            }
+            catch (std::exception &e)
+            {
+                LOG_ERROR("获取好友申请事件失败:{}-{}-{}！", uid, pid, e.what());
+            }
+            mtx.unlock();
+            return success;
         }
 
         // 查询用户的所有好友申请，返回好友的用户 ID
