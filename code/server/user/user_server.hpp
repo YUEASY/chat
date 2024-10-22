@@ -67,7 +67,7 @@ namespace chat_ns
                 LOG_ERROR("{} - 密码格式不合法！", request->request_id());
                 return err_response(request->request_id(), "密码格式不合法！");
             }
-            User user = {0};
+            User user ;
             if (_mysql_user->getUserByNickname(nickname, user) == true)
             {
                 LOG_ERROR("{} - 用户名被占用- {}！", request->request_id(), nickname);
@@ -106,7 +106,7 @@ namespace chat_ns
             };
             std::string nickname = request->nickname();
             std::string password = request->password();
-            User user = {0};
+            User user ;
             if (_mysql_user->getUserByNickname(nickname, user) || user.password != password)
             {
                 LOG_ERROR("{} - 用户名或密码错误 - {}-{}！", request->request_id(), nickname, password);
@@ -182,7 +182,7 @@ namespace chat_ns
                 LOG_ERROR("{} - 验证码错误 - {}-{}！", request->request_id(), code_id, code);
                 return err_response(request->request_id(), "验证码错误!");
             }
-            User user = {0};
+            User user ;
             if (_mysql_user->getUserByPhone(phone, user) == true)
             {
                 LOG_ERROR("{} - 该手机号已注册过用户 - {}！", request->request_id(), phone);
@@ -229,7 +229,7 @@ namespace chat_ns
                 LOG_ERROR("{} - 手机号码格式错误 - {}！", request->request_id(), phone);
                 return err_response(request->request_id(), "手机号码格式错误!");
             }
-            User user = {0};
+            User user ;
             if (_mysql_user->getUserByPhone(phone, user) == false)
             {
                 LOG_ERROR("{} - 该手机号未注册用户 - {}！", request->request_id(), phone);
@@ -271,7 +271,7 @@ namespace chat_ns
             // 1. 从请求中取出用户 ID
             std::string uid = request->user_id();
             // 2. 通过用户 ID，从数据库中查询用户信息
-            User user = {0};
+            User user ;
             if (_mysql_user->getUserById(uid, user) == false)
             {
                 LOG_ERROR("{} - 未找到用户信息 - {}！", request->request_id(), uid);
@@ -397,7 +397,7 @@ namespace chat_ns
             // 1. 从请求中取出用户 ID 与头像数据
             std::string uid = request->user_id();
             // 2. 从数据库通过用户 ID 进行用户信息查询，判断用户是否存在
-            User user = {0};
+            User user ;
             if (_mysql_user->getUserById(uid, user) == false)
             {
                 LOG_ERROR("{} - 未找到用户信息 - {}！", request->request_id(), uid);
@@ -471,7 +471,7 @@ namespace chat_ns
                 return err_response(request->request_id(), "用户名长度不合法！");
             }
             // 3. 从数据库通过用户 ID 进行用户信息查询，判断用户是否存在
-            User user = {0};
+            User user ;
             if (_mysql_user->getUserById(uid, user) == false)
             {
                 LOG_ERROR("{} - 未找到用户信息 - {}！", request->request_id(), uid);
@@ -517,7 +517,7 @@ namespace chat_ns
             std::string new_description = request->description();
             // 2. 从数据库通过用户 ID 进行用户信息查询，判断用户是否存在
 
-            User user = {0};
+            User user ;
             if (_mysql_user->getUserById(uid, user) == false)
             {
                 LOG_ERROR("{} - 未找到用户信息 - {}！", request->request_id(), uid);
@@ -571,7 +571,7 @@ namespace chat_ns
                 return err_response(request->request_id(), "验证码错误!");
             }
             // 3. 从数据库通过用户 ID 进行用户信息查询，判断用户是否存在
-            User user = {0};
+            User user ;
             if (_mysql_user->getUserById(uid, user) == false)
             {
                 LOG_ERROR("{} - 未找到用户信息 - {}！", request->request_id(), uid);

@@ -7,9 +7,9 @@ set(CMAKE_CXX_STANDARD 17)
 # 添加多个源文件
 set(SOURCES
     user_server.cc
-    ../proto/cpp_out/base.pb.cc
-    ../proto/cpp_out/file.pb.cc
-    ../proto/cpp_out/user.pb.cc
+    ${CMAKE_SOURCE_DIR}/proto/cpp_out/base.pb.cc
+    ${CMAKE_SOURCE_DIR}/proto/cpp_out/file.pb.cc
+    ${CMAKE_SOURCE_DIR}/proto/cpp_out/user.pb.cc
 )
 
 add_executable(user_server ${SOURCES})

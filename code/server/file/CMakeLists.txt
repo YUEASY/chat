@@ -10,8 +10,8 @@ add_compile_options(-Wall)
 # 添加多个源文件
 set(SOURCES
     file_server.cc
-    ${CMAKE_SOURCE_DIR}/../proto/cpp_out/base.pb.cc
-    ${CMAKE_SOURCE_DIR}/../proto/cpp_out/file.pb.cc
+    ${CMAKE_SOURCE_DIR}/proto/cpp_out/base.pb.cc
+    ${CMAKE_SOURCE_DIR}/proto/cpp_out/file.pb.cc
 )
 
 add_executable(file_server ${SOURCES})

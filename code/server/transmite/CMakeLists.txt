@@ -10,9 +10,9 @@ set(CMAKE_CXX_STANDARD 17)
 # 添加多个源文件
 set(SOURCES
     transmite_server.cc
-    ../proto/cpp_out/base.pb.cc
-    ../proto/cpp_out/user.pb.cc
-    ../proto/cpp_out/transmite.pb.cc
+    ${CMAKE_SOURCE_DIR}/proto/cpp_out/base.pb.cc
+    ${CMAKE_SOURCE_DIR}/proto/cpp_out/user.pb.cc
+    ${CMAKE_SOURCE_DIR}/proto/cpp_out/transmite.pb.cc
 )
 
 add_executable(transmite_server ${SOURCES})

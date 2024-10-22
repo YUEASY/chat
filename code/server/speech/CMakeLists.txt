@@ -10,7 +10,7 @@ add_compile_options(-Wall)
 # 添加多个源文件
 set(SOURCES
     speech_server.cc
-    ../proto/cpp_out/speech.pb.cc
+    ${CMAKE_SOURCE_DIR}/proto/cpp_out/speech.pb.cc
 )
 
 add_executable(speech_server ${SOURCES})

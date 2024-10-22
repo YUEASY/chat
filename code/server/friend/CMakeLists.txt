@@ -7,10 +7,10 @@ set(CMAKE_CXX_STANDARD 17)
 # 添加多个源文件
 set(SOURCES
     friend_server.cc
-    ../proto/cpp_out/base.pb.cc
-    ../proto/cpp_out/friend.pb.cc
-    ../proto/cpp_out/message.pb.cc
-    ../proto/cpp_out/user.pb.cc
+    ${CMAKE_SOURCE_DIR}/proto/cpp_out/base.pb.cc
+    ${CMAKE_SOURCE_DIR}/proto/cpp_out/friend.pb.cc
+    ${CMAKE_SOURCE_DIR}/proto/cpp_out/message.pb.cc
+    ${CMAKE_SOURCE_DIR}/proto/cpp_out/user.pb.cc
 )
 
 add_executable(friend_server ${SOURCES})

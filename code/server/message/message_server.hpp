@@ -355,11 +355,12 @@ namespace chat_ns
                 return;
             }
             // 3. 提取消息的元信息，存储到mysql数据库中
-            chat_ns::Message msg{atoi(message.message_id().c_str()),
-                                 message.chat_session_id(),
-                                 message.sender().user_id(),
-                                 to_string(message.message().message_type()),
-                                 message.timestamp()};
+            chat_ns::Message msg;
+            msg.message_id = atoi(message.message_id().c_str());
+            msg.user_id = message.sender().user_id();
+            msg.session_id = message.chat_session_id();
+            msg.message_type = message.message().message_type();
+            msg.create_time = message.timestamp();
             msg.content = content;
             msg.file_id = file_id;
             msg.file_name = file_name;

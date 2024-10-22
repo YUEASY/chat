@@ -73,7 +73,7 @@ namespace chat_ns
             message.mutable_sender()->CopyFrom(rsp.user_info());
             message.mutable_message()->CopyFrom(content);
             // 获取消息转发客户端用户列表
-            std::vector<std::string>  target_list;
+            std::vector<ChatSessionMember> target_list;
             bool ret = _mysql_session_member_table->getMembersBySession(chat_ssid, target_list);
             // 将封装完毕的消息，发布到消息队列，待消息存储子服务进行消息持久化
             ret = _mq_client->publish(_exchange_name, message.SerializeAsString(), _routing_key);
@@ -86,9 +86,9 @@ namespace chat_ns
             response->set_request_id(rid);
             response->set_success(true);
             response->mutable_message()->CopyFrom(message);
-            for (const auto &id : target_list)
+            for (const auto &target : target_list)
             {
-                response->add_target_id_list(id);
+                response->add_target_id_list(target.user_id);
             }
         }
 
