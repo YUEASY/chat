@@ -107,7 +107,8 @@ namespace chat_ns
             std::string nickname = request->nickname();
             std::string password = request->password();
             User user ;
-            if (_mysql_user->getUserByNickname(nickname, user) || user.password != password)
+            _mysql_user->getUserByNickname(nickname, user);
+            if (user.nickname == "" || user.password != password)
             {
                 LOG_ERROR("{} - 用户名或密码错误 - {}-{}！", request->request_id(), nickname, password);
                 return err_response(request->request_id(), "用户名或密码错误!");

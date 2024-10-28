@@ -25,8 +25,8 @@ namespace chat_ns
                                                                _exchange_name(exchange_name),
                                                                _routing_key(routing_key),
                                                                _mq_client(mq_client),
-                                                               _mysql_session_member_table() 
-                                                               {}
+                                                               _mysql_session_member_table(std::make_shared<ChatSessionMemberTable>())
+        {}
         ~TransmiteServiceImpl() {}
         void GetTransmitTarget(google::protobuf::RpcController *controller,
                                const ::chat_ns::NewMessageReq *request,

@@ -343,6 +343,7 @@ namespace chat_ns
             // 2. 从数据库中查询出用户的单聊会话列表
             std::vector<SingleChatSession> sf_list;
             _mysql_chat_session->getChatSessionsByUserIdType1(uid, sf_list);
+
             //  1. 从单聊会话列表中，取出所有的好友ID，从用户子服务获取用户信息
             std::unordered_set<std::string> users_id_list;
             for (const auto &f : sf_list)

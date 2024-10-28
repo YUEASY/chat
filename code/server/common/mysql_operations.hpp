@@ -81,7 +81,7 @@ namespace chat_ns
                 user.nickname = row[2];
                 user.description = row[3] ? row[3] : "";
                 user.password = row[4];
-                user.phone = row[5];
+                user.phone = row[5] ? row[5] : "";
                 user.avatar_id = row[6] ? row[6] : "";
                 mysql_free_result(res);
                 return true;
@@ -121,7 +121,7 @@ namespace chat_ns
                 user.nickname = row[2];
                 user.description = row[3] ? row[3] : "";
                 user.password = row[4];
-                user.phone = row[5];
+                user.phone = row[5] ? row[5] : "";
                 user.avatar_id = row[6] ? row[6] : "";
                 mysql_free_result(res);
                 return true;
@@ -161,7 +161,7 @@ namespace chat_ns
                 user.nickname = row[2];
                 user.description = row[3] ? row[3] : "";
                 user.password = row[4];
-                user.phone = row[5];
+                user.phone = row[5] ? row[5] : "";
                 user.avatar_id = row[6] ? row[6] : "";
                 mysql_free_result(res);
                 return true;
@@ -215,7 +215,7 @@ namespace chat_ns
                 user.nickname = row[2];                  // nickname (varchar(64))
                 user.description = row[3] ? row[3] : ""; // description (text)
                 user.password = row[4];                  // password (varchar(64))
-                user.phone = row[5];                     // phone (varchar(64))
+                user.phone = row[5] ? row[5] : "";       // phone (varchar(64))
                 user.avatar_id = row[6] ? row[6] : "";   // avatar_id (varchar(64))
 
                 users[user.user_id] = user; // 将用户添加到哈希表中
@@ -237,9 +237,16 @@ namespace chat_ns
             sql.append(user.description);
             sql.append("', '");
             sql.append(user.password);
-            sql.append("', '");
-            sql.append(user.phone);
-            sql.append("', '");
+            sql.append("', ");
+            if (user.phone == "")
+                sql.append("NULL");
+            else
+            {
+                sql.append({"'"});
+                sql.append(user.phone);
+                sql.append("'");
+            }
+            sql.append(", '");
             sql.append(user.avatar_id);
             sql.append("');");
 
@@ -341,7 +348,7 @@ namespace chat_ns
             }
 
             // 构建 SQL 查询
-            std::string sql = "SELECT user_id FROM members WHERE session_id = '" + std::string(session_id) + "';";
+            std::string sql = "SELECT user_id FROM chat_session_members WHERE session_id = '" + std::string(session_id) + "';";
 
             std::lock_guard<std::mutex> lock(mtx); // 自动管理锁，确保线程安全
 
@@ -362,7 +369,7 @@ namespace chat_ns
             {
                 if (row[0] != nullptr) // 检查 user_id 是否为 nullptr
                 {
-                    csms.push_back(ChatSessionMember(session_id.data(),row[0])); // 将 user_id 添加到结果 vector 中
+                    csms.push_back(ChatSessionMember(session_id.data(), row[0])); // 将 user_id 添加到结果 vector 中
                 }
             }
 
@@ -390,6 +397,7 @@ namespace chat_ns
         //| file_size    | int unsigned     | YES  |     | NULL    |                |
         //+--------------+------------------+------+-----+---------+----------------+
         using ptr = std::shared_ptr<MessageTable>;
+        MessageTable() = default;
 
         // 获取消息信息（通过 message_id）
         bool getMessageById(std::string_view message_id, Message &message)
@@ -469,53 +477,58 @@ namespace chat_ns
 
         bool getMessagesBySessionId(std::string_view session_id, std::vector<Message> &messages, int limit = -1)
         {
-            std::string sql = "SELECT * FROM messages WHERE session_id = '";
-            sql.append(session_id);
-            sql.append("' ORDER BY create_time DESC"); // 按创建时间降序排列
 
+            // 检查 session_id 是否有效
+            if (session_id.empty())
+            {
+                LOG_ERROR("session_id is empty");
+                return false;
+            }
+            // 使用参数化查询，避免 SQL 注入
+            std::string sql = "SELECT * FROM messages WHERE session_id = '" + std::string(session_id) + "' ORDER BY create_time DESC";
             if (limit > 0)
             {
-                sql.append(" LIMIT ");
-                sql.append(std::to_string(limit)); // 只获取最近的 limit 条消息
+                sql += " LIMIT " + std::to_string(limit); // 只获取最近的 limit 条消息
             }
 
-            sql.append(";");
+            sql += ";";
 
-            std::lock_guard<std::mutex> lock(mtx); // 自动管理锁
-
-            if (!Utils::mysqlQuery(mysql, sql))
+            mtx.lock(); // 锁定
+            bool success = false; // 用于标识操作是否成功
+            if (Utils::mysqlQuery(mysql, sql))
             {
-                return false;
+                MYSQL_RES *res = mysql_store_result(mysql);
+                if (res != nullptr)
+                {
+                    MYSQL_ROW row;
+                    while ((row = mysql_fetch_row(res)) != nullptr)
+                    {
+                        Message message;
+                        message.id = std::stoull(row[0]);
+                        message.message_id = row[1] ? row[1] : "";
+                        message.session_id = row[2] ? row[2] : "";
+                        message.user_id = row[3] ? row[3] : "";
+                        message.message_type = static_cast<uint8_t>(row[4] ? std::stoul(row[4]) : 0);
+                        message.create_time = row[5] ? row[5] : "";
+                        message.content = row[6] ? row[6] : "";
+                        message.file_id = row[7] ? row[7] : "";
+                        message.file_name = row[8] ? row[8] : "";
+                        message.file_size = row[9] ? std::stoul(row[9]) : 0;
+
+                        messages.push_back(message);
+                    }
+                    mysql_free_result(res);
+                    success = true; // 操作成功
+                }
+                else
+                {
+                    LOG_ERROR("mysql store result error: {}", std::string(mysql_error(mysql)));
+                }
             }
 
-            MYSQL_RES *res = mysql_store_result(mysql);
-            if (res == nullptr)
-            {
-                LOG_ERROR("mysql store result error: {}", std::string(mysql_error(mysql)));
-                return false;
-            }
+            mtx.unlock(); // 解锁
 
-            MYSQL_ROW row;
-            while ((row = mysql_fetch_row(res)) != nullptr)
-            {
-                Message message;
-                message.id = std::stoull(row[0]);
-                message.message_id = row[1];
-                message.session_id = row[2];
-                message.user_id = row[3];
-                message.message_type = static_cast<uint8_t>(std::stoul(row[4]));
-                message.create_time = row[5] ? row[5] : "";
-                message.content = row[6] ? row[6] : "";
-                message.file_id = row[7] ? row[7] : "";
-                message.file_name = row[8] ? row[8] : "";
-                message.file_size = row[9] ? std::stoul(row[9]) : 0;
-
-                messages.push_back(message);
-            }
-
-            mysql_free_result(res);
-
-            return !messages.empty(); // 如果 messages 为空，则返回 false
+            return success && !messages.empty(); // 如果 messages 为空，则返回 false
         }
 
         // 批量获取消息信息2
@@ -873,7 +886,7 @@ namespace chat_ns
         // 新增好友申请
         bool addFriendApply(const FriendApply &apply)
         {
-            std::string sql = "INSERT INTO friend_apply (event_id, user_id, peer_id) VALUES ('" + apply.event_id + "', '" + apply.user_id + "', '" + apply.peer_id + "');";
+            std::string sql = "INSERT INTO friend_applys (event_id, user_id, peer_id) VALUES ('" + apply.event_id + "', '" + apply.user_id + "', '" + apply.peer_id + "');";
             mtx.lock();
             bool result = Utils::mysqlQuery(mysql, sql);
             mtx.unlock();
@@ -882,46 +895,50 @@ namespace chat_ns
 
         bool applyExists(const std::string &uid, const std::string &pid, bool &res)
         {
-            std::string sql = "SELECT COUNT(*) FROM friend_apply "
+            std::string sql = "SELECT COUNT(*) FROM friend_applys "
                               "WHERE user_id = '" +
-                              uid + "' "
-                                    "AND peer_id = '" +
-                              pid + "';";
+                              uid + "' AND peer_id = '" + pid + "';";
 
-            mtx.lock();
-            bool success = false;
-            try
+            std::lock_guard<std::mutex> lock(mtx); // 使用 RAII 确保锁的安全性
+            if (!Utils::mysqlQuery(mysql, sql))
             {
-                int count = Utils::mysqlQuery(mysql, sql); // 假设这个函数可以返回查询的计数
-                LOG_DEBUG("{} - {} 好友事件数量：{}", uid, pid, count);
-                res = (count > 0);
-                success = true;
+                return false; // 处理错误
             }
-            catch (std::exception &e)
+
+            MYSQL_RES *res_set = mysql_store_result(mysql);
+            if (res_set == nullptr)
             {
-                LOG_ERROR("获取好友申请事件失败:{}-{}-{}！", uid, pid, e.what());
+                LOG_ERROR("mysql store result error: {}", std::string(mysql_error(mysql)));
+                return false;
             }
-            mtx.unlock();
-            return success;
+
+            MYSQL_ROW row = mysql_fetch_row(res_set);
+            if (row)
+            {
+                res = (row[0] ? std::stoi(row[0]) > 0 : false);
+            }
+
+            mysql_free_result(res_set); // 释放结果集
+            return true;
         }
 
         // 查询用户的所有好友申请，返回好友的用户 ID
         bool getFriendAppliesByUserId(const std::string &user_id, std::vector<std::string> &uids)
         {
-            std::string sql = "SELECT user_id FROM friend_apply WHERE peer_id = '" + user_id + "';";
+            std::string sql = "SELECT user_id FROM friend_applys WHERE peer_id = '" + user_id + "';";
 
-            mtx.lock();
-            if (!Utils::mysqlQuery(mysql, sql))
+            std::lock_guard<std::mutex> lock(mtx); // 使用 RAII 来自动管理锁
+
+            if (mysql_query(mysql, sql.c_str()) != 0) // 执行查询
             {
-                mtx.unlock();
+                LOG_ERROR("mysql query error: {}", std::string(mysql_error(mysql)));
                 return false;
             }
 
-            MYSQL_RES *res = mysql_store_result(mysql);
+            MYSQL_RES *res = mysql_store_result(mysql); // 获取结果集
             if (res == nullptr)
             {
                 LOG_ERROR("mysql store result error: {}", std::string(mysql_error(mysql)));
-                mtx.unlock();
                 return false;
             }
 
@@ -934,15 +951,25 @@ namespace chat_ns
                 }
             }
 
-            mysql_free_result(res);
-            mtx.unlock();
+            mysql_free_result(res); // 释放结果集
+
+            // 检查是否有多结果集并处理
+            while (mysql_next_result(mysql) == 0)
+            {
+                MYSQL_RES *next_res = mysql_store_result(mysql);
+                if (next_res)
+                {
+                    mysql_free_result(next_res); // 释放多余的结果集
+                }
+            }
+
             return !uids.empty();
         }
 
         // 删除好友申请
         bool deleteFriendApply(const std::string &event_id)
         {
-            std::string sql = "DELETE FROM friend_apply WHERE event_id = '" + event_id + "';";
+            std::string sql = "DELETE FROM friend_applys WHERE event_id = '" + event_id + "';";
             mtx.lock();
             bool result = Utils::mysqlQuery(mysql, sql);
             mtx.unlock();
@@ -951,7 +978,7 @@ namespace chat_ns
 
         bool deleteFriendApply(const std::string &uid, const std::string &pid)
         {
-            std::string sql = "DELETE FROM friend_apply WHERE user_id = '" + uid + "' AND peer_id = '" + pid + "';";
+            std::string sql = "DELETE FROM friend_applys WHERE user_id = '" + uid + "' AND peer_id = '" + pid + "';";
             mtx.lock();
             bool result = Utils::mysqlQuery(mysql, sql);
             mtx.unlock();

@@ -129,6 +129,45 @@ namespace chat_ns
             }
             return true;
         }
+
+        static std::string timestampToMySQLFormat(int64_t timestamp)
+        {
+            // 将时间戳转换为结构体tm
+            time_t t = static_cast<time_t>(timestamp);
+            struct tm *tm_info = localtime(&t);
+
+            // 使用字符串流格式化日期时间
+            std::ostringstream oss;
+            oss << std::put_time(tm_info, "%Y-%m-%d %H:%M:%S");
+
+            return oss.str();
+        }
+
+        static int64_t MySQLFormatToTimestamp(const std::string &datetime)
+        {
+            std::tm tm_info = {};
+            std::istringstream ss(datetime);
+
+            // 使用 std::get_time 来解析日期时间字符串
+            ss >> std::get_time(&tm_info, "%Y-%m-%d %H:%M:%S");
+            if (ss.fail())
+            {
+                throw std::runtime_error("Failed to parse datetime string");
+            }
+
+            // 将 tm 结构转换为 time_t
+            time_t t = mktime(&tm_info);
+            if (t == -1)
+            {
+                throw std::runtime_error("Failed to convert tm to time_t");
+            }
+
+            // 返回时间戳
+            return static_cast<int64_t>(t);
+        }
     };
+
+    
+
 
 }

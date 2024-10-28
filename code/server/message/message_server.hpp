@@ -26,7 +26,7 @@ namespace chat_ns
             const ServiceManager::ptr &channel_manager,
             const std::string &file_service_name,
             const std::string &user_service_name) : _es_message(std::make_shared<ESMessage>(es_client)),
-                                                    _mysql_message(),
+                                                    _mysql_message(std::make_shared<MessageTable>()),
                                                     _file_service_name(file_service_name),
                                                     _user_service_name(user_service_name),
                                                     _mm_channels(channel_manager)
@@ -276,7 +276,7 @@ namespace chat_ns
                 auto message_info = response->add_msg_list();
                 message_info->set_message_id(msg.message_id);
                 message_info->set_chat_session_id(msg.session_id);
-                message_info->set_timestamp(atoi(msg.create_time.c_str()));
+                message_info->set_timestamp(Utils::MySQLFormatToTimestamp(msg.create_time));
                 message_info->mutable_sender()->CopyFrom(user_lists[msg.user_id]);
                 message_info->mutable_message()->set_message_type(MessageType::STRING);
                 message_info->mutable_message()->mutable_string_message()->set_content(msg.content);
@@ -289,11 +289,12 @@ namespace chat_ns
             // 1. 取出序列化的消息内容，进行反序列化
             chat_ns::MessageInfo message;
             bool ret = message.ParseFromArray(body, sz);
-            if (ret == false)
-            {
-                LOG_ERROR("对消费到的消息进行反序列化失败！");
-                return;
-            }
+            // if (ret == false)
+            // {
+            //     LOG_ERROR("对消费到的消息进行反序列化失败！");
+            //     std::cerr<<message.DebugString()<<std::endl;
+            //     return;
+            // }
             // 2. 根据不同的消息类型进行不同的处理
             std::string file_id, file_name, content;
             int64_t file_size;
@@ -356,11 +357,11 @@ namespace chat_ns
             }
             // 3. 提取消息的元信息，存储到mysql数据库中
             chat_ns::Message msg;
-            msg.message_id = atoi(message.message_id().c_str());
+            msg.message_id = message.message_id();
             msg.user_id = message.sender().user_id();
             msg.session_id = message.chat_session_id();
             msg.message_type = message.message().message_type();
-            msg.create_time = message.timestamp();
+            msg.create_time = Utils::timestampToMySQLFormat(message.timestamp());
             msg.content = content;
             msg.file_id = file_id;
             msg.file_name = file_name;
